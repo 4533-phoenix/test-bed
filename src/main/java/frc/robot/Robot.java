@@ -25,7 +25,7 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
-  private final CANSparkMax testMotor = new CANSparkMax(0, MotorType.kBrushless);
+  private final CANSparkMax testMotor = new CANSparkMax(1, MotorType.kBrushless);
   private final SparkMaxPIDController pid = testMotor.getPIDController();
 
   /**
