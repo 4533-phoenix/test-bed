@@ -4,7 +4,10 @@
 
 package frc.robot;
 
+import frc.robot.Constants.ShooterConstants;
+
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -12,6 +15,8 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.controller.PIDController;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -26,7 +31,10 @@ public class Robot extends TimedRobot {
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
   private final CANSparkMax testMotor = new CANSparkMax(1, MotorType.kBrushless);
-  private final SparkMaxPIDController pid = testMotor.getPIDController();
+  private final RelativeEncoder encoder = testMotor.getEncoder();
+
+  private final SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(ShooterConstants.KS, ShooterConstants.KV);
+  private final PIDController pid = new PIDController(ShooterConstants.KP, ShooterConstants.KI, ShooterConstants.KD);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -34,11 +42,15 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
+    testMotor.setInverted(true);
+    encoder.setVelocityConversionFactor(1.0);
+
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
 
-    SmartDashboard.putNumber("RPM", 0);
+    SmartDashboard.putNumber("RPM", 0.0);
+    SmartDashboard.putNumber("Real RPM", 0.0);
   }
 
   /**
@@ -89,7 +101,25 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    pid.setReference(SmartDashboard.getNumber("RPM", 0), ControlType.kVelocity);
+    // double x = 1.0;
+    // double y = 1.0;
+
+    // double setpoint = (
+    //   60 * Math.sqrt(
+    //     (ShooterConstants.GRAVITY_ACCELERATION * Math.pow(x, 2)) / 
+    //     (2 * Math.pow(Math.cos(ShooterConstants.SHOOTER_ANGLE), 2) * 
+    //       (ShooterConstants.SHOOTER_HEIGHT + (x * Math.tan(ShooterConstants.SHOOTER_ANGLE)) - y))
+    //   )
+    // ) / 
+    // (Math.PI * ShooterConstants.FLYWHEEL_RADIUS);
+
+    double setpoint = SmartDashboard.getNumber("RPM", 0.0);
+    double currentVelocity = encoder.getVelocity();
+
+    // testMotor.setVoltage(feedforward.calculate(setpoint) + pid.calculate(currentVelocity, setpoint));
+    testMotor.setVoltage(setpoint * (7.0 / 3340.0));
+
+    SmartDashboard.putNumber("Real RPM", currentVelocity);
   }
 
   /** This function is called once when the robot is disabled. */
